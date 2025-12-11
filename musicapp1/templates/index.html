@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>◆ ECHOLOCATION - 音訊分析模組 V2.0 ◆</title>
+    <style>
+        /* CSS 變數：定義主題顏色，方便修改 */
+        :root {
+            --color-bg: #11141c;        /* 主背景深藍黑 */
+            --color-primary: #00d9ff;   /* 主色調：科技藍 */
+            --color-secondary: #ff33c4; /* 輔助色調：霓虹紫 */
+            --color-text: #e0f7fa;      /* 主要文字顏色 */
+            --color-border: rgba(0, 217, 255, 0.4); /* 邊框淡化藍 */
+        }
+        
+        body {
+            font-family: 'Consolas', 'Monospace', monospace; /* 保持科技單間距字體 */
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(20, 23, 30, 0.95); /* 容器背景，比主背景稍亮 */
+            padding: 40px;
+            border-radius: 8px;
+            border: 1px solid var(--color-primary); /* 精準的科技藍邊框 */
+            /* 柔和的外部光暈 */
+            box-shadow: 0 0 25px rgba(0, 217, 255, 0.2); 
+        }
+        h1 {
+            color: var(--color-secondary); /* 霓虹紫標題 */
+            text-shadow: 0 0 10px var(--color-secondary); /* 精緻光暈 */
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            letter-spacing: 4px;
+            border-bottom: 2px solid var(--color-secondary);
+            padding-bottom: 10px;
+        }
+        .upload-area {
+            border: 1px dashed var(--color-border); /* 精緻虛線邊框 */
+            padding: 30px;
+            margin-bottom: 25px;
+            border-radius: 5px;
+            background-color: rgba(0, 217, 255, 0.05); /* 輕微的主色調背景 */
+        }
+        
+        /* 輸入框和按鈕樣式 */
+        input[type="file"] {
+            color: var(--color-primary);
+            border: 1px solid var(--color-primary);
+            padding: 8px;
+            background-color: #1a1a2e;
+            border-radius: 3px;
+        }
+        button {
+            background-color: var(--color-primary); /* 科技藍按鈕 */
+            color: var(--color-bg);
+            border: none;
+            padding: 10px 25px;
+            margin-left: 15px;
+            cursor: pointer;
+            border-radius: 3px;
+            text-transform: uppercase;
+            font-weight: bold;
+            box-shadow: 0 0 8px var(--color-primary);
+            transition: all 0.2s;
+        }
+        button:hover {
+            background-color: #33e6ff;
+            box-shadow: 0 0 15px var(--color-primary);
+        }
+
+        #result-container {
+            margin-top: 30px;
+            text-align: left;
+            padding-top: 25px;
+        }
+        .result-block h2 {
+            color: var(--color-primary); /* 科技藍小標題 */
+            border-left: 5px solid var(--color-primary); /* 現代感的邊線 */
+            padding-left: 10px;
+            margin-top: 30px;
+            text-shadow: 0 0 5px rgba(0, 217, 255, 0.5);
+            letter-spacing: 1px;
+            font-size: 1.5em;
+        }
+        p strong {
+            color: var(--color-secondary); /* 霓虹紫強調 */
+        }
+        .link-list a {
+            display: inline-block;
+            margin-right: 15px;
+            color: var(--color-text); /* 連結使用白色 */
+            text-decoration: none;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+        }
+        .link-list a:hover {
+            text-decoration: underline;
+            color: var(--color-primary);
+        }
+        /* 內容區塊樣式 */
+        #lyrics-content, #artist-info-content {
+            white-space: pre-wrap;
+            background-color: #1a1f29; /* 深色內容區塊 */
+            padding: 20px;
+            border-radius: 5px;
+            line-height: 1.7;
+            margin-top: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.95em;
+            overflow-x: auto; /* 避免長內容溢出 */
+        }
+        
+        .loader {
+            display: none;
+            border: 4px solid #1a1a2e;
+            border-top: 4px solid var(--color-secondary); /* 旋轉的霓虹紫 */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 0.8s linear infinite;
+            margin: 10px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error-message {
+            color: #ff5555; /* 警告紅 */
+            font-weight: bold;
+            text-shadow: 0 0 5px #ff5555;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>◆ ECHOLOCATION - 音訊分析模組 V2.0 ◆</h1>
+    <div class="upload-area">
+        <input type="file" id="audio-input" accept="audio/*">
+        <button onclick="recognizeAudio()">PROCESS AUDIO SIGNAL</button>
+        <div class="loader" id="loader"></div>
+    </div>
+
+    <div id="result-container" style="display: none;">
+        <div class="result-block">
+            <h2>[DATASTREAM: 0x41] 音訊核心匹配</h2>
+            <p><strong>歌曲名稱:</strong> <span id="song-title"></span></p>
+            <p><strong>歌手/單元:</strong> <span id="song-artist"></span></p>
+            <p><strong>發行模組:</strong> <span id="song-album"></span></p>
+            <p><strong>數據連結:</strong> <span id="song-links" class="link-list"></span></p>
+        </div>
+
+        <div class="result-block">
+            <h2>[AI: GEMINI] 歌詞解析</h2>
+            <div id="lyrics-content">正在等待核心數據...</div>
+        </div>
+
+        <div class="result-block">
+            <h2>[AI: GEMINI] 單位簡介</h2>
+            <div id="artist-info-content">正在等待核心數據...</div>
+        </div>
+    </div>
+    
+    <div id="message" class="error-message"></div>
+
+</div>
+
+<script>
+    function recognizeAudio() {
+        const audioInput = document.getElementById('audio-input');
+        const file = audioInput.files[0];
+        const resultContainer = document.getElementById('result-container');
+        const loader = document.getElementById('loader');
+        const message = document.getElementById('message');
+
+        // 清空前次結果
+        resultContainer.style.display = 'none';
+        message.textContent = '';
+        document.getElementById('song-title').textContent = '...';
+        document.getElementById('song-artist').textContent = '...';
+        document.getElementById('song-album').textContent = '...';
+        document.getElementById('song-links').innerHTML = '...';
+        document.getElementById('lyrics-content').textContent = '正在執行 Audd.io 核心匹配...';
+        document.getElementById('artist-info-content').textContent = '正在執行 Audd.io 核心匹配...';
+
+
+        if (!file) {
+            message.textContent = '[ERROR: FILE_MISSING] 請選擇一個音訊檔案。';
+            return;
+        }
+
+        // 顯示載入動畫
+        loader.style.display = 'block';
+
+        const formData = new FormData();
+        formData.append('audio_file', file);
+
+        fetch('/recognize', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            // 隱藏載入動畫
+            loader.style.display = 'none';
+
+            if (data.status === 'success') {
+                resultContainer.style.display = 'block';
+                message.textContent = '[STATUS: OK] 數據流成功接收。';
+                
+                // 顯示 Audd.io 資訊
+                document.getElementById('song-title').textContent = data.title;
+                document.getElementById('song-artist').textContent = data.artist;
+                document.getElementById('song-album').textContent = data.album || '[N/A]';
+                
+                // 處理音樂連結
+                const linksHtml = Object.entries(data.links)
+                    .map(([name, url]) => `<a href="${url}" target="_blank">${name}</a>`)
+                    .join(' | ');
+                document.getElementById('song-links').innerHTML = linksHtml || '[ERROR: NO_DATALINK]';
+                
+                // 顯示 Gemini AI 資訊
+                document.getElementById('lyrics-content').textContent = data.lyrics || '[GEMINI OFFLINE: 歌詞數據流中斷]';
+                document.getElementById('artist-info-content').textContent = data.artist_info || '[GEMINI OFFLINE: 簡介數據流中斷]';
+
+            } else {
+                // 處理失敗或錯誤訊息
+                message.textContent = data.message ? `[ERROR 500] 辨識核心回傳錯誤: ${data.message}` : '[ERROR] 發生未知系統錯誤。';
+            }
+        })
+        .catch(error => {
+            loader.style.display = 'none';
+            console.error('Fetch Error:', error);
+            message.textContent = '[NETWORK FAILURE] 無法連線至本地伺服器。';
+        });
+    }
+</script>
+
+</body>
+</html>
